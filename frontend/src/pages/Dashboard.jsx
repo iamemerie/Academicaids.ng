@@ -38,6 +38,56 @@ function Toast({ toasts, remove }) {
   );
 }
 
+// ─── Animated Greeting ─────────────────────────────────────────────────────────
+function AnimatedGreeting({ firstName, role }) {
+  const [displayedName, setDisplayedName] = useState("");
+  const [showRole, setShowRole] = useState(false);
+  const [doneTyping, setDoneTyping] = useState(false);
+
+  useEffect(() => {
+    setDisplayedName("");
+    setShowRole(false);
+    setDoneTyping(false);
+
+    if (!firstName) return;
+
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setDisplayedName(firstName.slice(0, i));
+      if (i >= firstName.length) {
+        clearInterval(interval);
+        setDoneTyping(true);
+        setTimeout(() => setShowRole(true), 200);
+      }
+    }, 80);
+
+    return () => clearInterval(interval);
+  }, [firstName]);
+
+  return (
+    <div className="mb-8">
+      <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
+        Welcome back, {displayedName}
+        {!doneTyping && (
+          <span className="inline-block w-[3px] h-6 sm:h-7 ml-0.5 -mb-1 bg-indigo-600 animate-pulse" />
+        )}
+        {doneTyping && <span className="ml-1">👋</span>}
+      </h1>
+      <p
+        className={`text-slate-400 text-sm font-medium mt-1 transition-all duration-500 ${
+          showRole ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+        }`}
+      >
+        You are logged in as a{" "}
+        <span className="font-bold text-indigo-600">
+          {role === "student" ? "🎓 Student" : "👨‍🏫 Tutor"}
+        </span>
+      </p>
+    </div>
+  );
+}
+
 function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [view, setView] = useState("main");
@@ -47,6 +97,7 @@ function Dashboard() {
 
   const fullName = localStorage.getItem("fullName");
   const role = localStorage.getItem("role");
+  const firstName = fullName?.split(" ")[0] || "";
 
   const toast = (msg, type = "info") => {
     const id = Date.now();
@@ -132,17 +183,7 @@ function Dashboard() {
         {view === "main" && (
           <>
             {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
-                Welcome back, {fullName?.split(" ")[0]}! 👋
-              </h1>
-              <p className="text-slate-400 text-sm font-medium mt-1">
-                You are logged in as a{" "}
-                <span className="font-bold text-indigo-600">
-                  {role === "student" ? "🎓 Student" : "👨‍🏫 Tutor"}
-                </span>
-              </p>
-            </div>
+            <AnimatedGreeting firstName={firstName} role={role} />
 
             {/* Quick Actions Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -154,7 +195,7 @@ function Dashboard() {
                       ✨
                     </div>
                     <h3 className="font-bold text-slate-800 text-base tracking-tight mb-2">
-                      Post a Request
+                      Create Request
                     </h3>
                     <p className="text-slate-400 text-xs leading-relaxed mb-6">
                       Need expert guidance? Broadcast your project requirements
@@ -164,7 +205,7 @@ function Dashboard() {
                       onClick={() => setIsModalOpen(true)}
                       className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold tracking-wide hover:bg-indigo-700 shadow-sm transition"
                     >
-                      Post Now
+                      Submit
                     </button>
                   </div>
 
@@ -196,11 +237,12 @@ function Dashboard() {
                       My Sessions
                     </h3>
                     <p className="text-slate-400 text-xs leading-relaxed mb-6">
-                      Track commitments and handle scheduling details.
+                      Track study sessions and handle scheduling details with
+                      various tutors.
                     </p>
                     <button
                       onClick={() => setView("sessions")}
-                      className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold tracking-wide hover:bg-indigo-700 shadow-sm transition"
+                      className="block w-full bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold tracking-wide text-center hover:bg-indigo-700 shadow-sm transition"
                     >
                       View Sessions
                     </button>

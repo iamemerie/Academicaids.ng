@@ -8,8 +8,8 @@ function SessionManager({ userRole }) {
   const sampleSessions = [
     {
       id: "1",
-      tutorName: "Chiemerie Wisdom",
-      studentName: "Alex Okafor",
+      tutorName: "Mr Drake",
+      studentName: "Alex",
       subject: "Organic Chemistry II",
       date: "June 8, 2026",
       time: "4:00 PM - 5:30 PM",
@@ -19,7 +19,7 @@ function SessionManager({ userRole }) {
     },
     {
       id: "2",
-      tutorName: "Chiemerie Wisdom",
+      tutorName: "Mr Drake",
       studentName: "Sarah Musa",
       subject: "Introduction to Physics",
       date: "May 28, 2026",

@@ -9,7 +9,7 @@ const ADMIN_EMAIL = "wisdomchukwu326@gmail.com";
 // ─── Axios factory ────────────────────────────────────────────────────────────
 const api = (path = "") =>
   axios.create({
-    baseURL: `${BASE_URL}/admin${path}`,
+    baseURL: `${BASE_URL}/api/admin${path}`,
     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
   });
 
@@ -252,13 +252,14 @@ function UserDrawer({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const navigate = useNavigate(); // ✅ FIXED
+  const navigate = useNavigate();
 
   const [metrics, setMetrics] = useState({
     totalUsers: 0,
-    tutorsRegistered: 0,
-    studentsRegistered: 0,
+    totalTutors: 0,
+    totalStudents: 0,
     totalBookings: 0,
+    totalRequests: 0,
   });
   const [users, setUsers] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
@@ -291,7 +292,6 @@ export default function AdminDashboard() {
   const removeToast = (id) =>
     setToasts((prev) => prev.filter((t) => t.id !== id));
 
-  // ✅ FIXED: uses navigate() instead of window.location.href
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token");
     sessionStorage.clear();
@@ -524,7 +524,7 @@ export default function AdminDashboard() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-800 truncate">
-                Micheal
+                Wisdom Chukwuemeka
               </p>
               <p className="text-[10px] text-slate-400 truncate">
                 Administrator
@@ -577,7 +577,7 @@ export default function AdminDashboard() {
 
         <div className="p-6 lg:p-8 space-y-8 max-w-[1400px] mx-auto">
           {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard
               label="Total Users"
               value={metrics.totalUsers}
@@ -587,14 +587,14 @@ export default function AdminDashboard() {
             />
             <StatCard
               label="Tutors"
-              value={metrics.tutorsRegistered}
+              value={metrics.totalTutors}
               icon="👨‍🏫"
               accent="border-l-emerald-500"
               delta={metrics.tutorsDelta}
             />
             <StatCard
               label="Students"
-              value={metrics.studentsRegistered}
+              value={metrics.totalStudents}
               icon="🎓"
               accent="border-l-sky-500"
               delta={metrics.studentsDelta}
@@ -605,6 +605,13 @@ export default function AdminDashboard() {
               icon="📅"
               accent="border-l-amber-500"
               delta={metrics.bookingsDelta}
+            />
+            <StatCard
+              label="Requests"
+              value={metrics.totalRequests}
+              icon="📨"
+              accent="border-l-rose-500"
+              delta={metrics.requestsDelta}
             />
           </div>
 
@@ -822,61 +829,54 @@ export default function AdminDashboard() {
                               {role}
                             </span>
                           </td>
-                          <td className="px-4 py-3.5 text-xs font-semibold text-slate-400">
+                          <td className="px-4 py-3.5 text-sm font-semibold text-slate-500">
                             {user.createdAt
                               ? new Date(user.createdAt).toLocaleDateString(
                                   "en-GB",
                                   {
                                     day: "numeric",
                                     month: "short",
-                                    year: "numeric",
+                                    year: "2-digit",
                                   },
                                 )
                               : "—"}
                           </td>
                           <td className="px-4 py-3.5">
                             <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${
                                 user.isBanned
-                                  ? "bg-rose-50 text-rose-600 border-rose-100"
-                                  : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                  ? "bg-rose-50 text-rose-600"
+                                  : "bg-emerald-50 text-emerald-600"
                               }`}
                             >
                               <span
-                                className={`w-1.5 h-1.5 rounded-full ${user.isBanned ? "bg-rose-400" : "bg-emerald-400"}`}
+                                className={`w-1.5 h-1.5 rounded-full ${user.isBanned ? "bg-rose-500" : "bg-emerald-500"}`}
                               />
                               {user.isBanned ? "Suspended" : "Active"}
                             </span>
                           </td>
-                          <td className="px-4 py-3.5 text-right pr-6">
-                            {isSelf ? (
-                              <span className="text-[10px] italic text-slate-300 font-medium">
-                                You
-                              </span>
-                            ) : (
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => setSelectedUser(user)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600 transition"
-                                >
-                                  View
-                                </button>
+                          <td className="px-4 py-3.5 text-right pr-6 space-x-1.5 whitespace-nowrap">
+                            {!isSelf && (
+                              <>
                                 <button
                                   onClick={() => handleToggleBan(user._id)}
                                   disabled={actionLoading === user._id}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition disabled:opacity-50 ${
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition ${
                                     user.isBanned
-                                      ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                                      : "bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100"
-                                  }`}
+                                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                      : "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                                  } disabled:opacity-50`}
                                 >
-                                  {actionLoading === user._id
-                                    ? "…"
-                                    : user.isBanned
-                                      ? "Restore"
-                                      : "Suspend"}
+                                  {user.isBanned ? "Restore" : "Suspend"}
                                 </button>
-                              </div>
+                                <button
+                                  onClick={() => handleDeleteUser(user._id)}
+                                  disabled={actionLoading === user._id}
+                                  className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+                                >
+                                  Delete
+                                </button>
+                              </>
                             )}
                           </td>
                         </tr>
@@ -887,63 +887,33 @@ export default function AdminDashboard() {
               </table>
             </div>
 
+            {/* Pagination controls */}
             {totalPages > 1 && (
-              <div className="p-4 border-t border-slate-100 flex items-center justify-between">
-                <p className="text-xs font-semibold text-slate-400">
-                  Page {page} of {totalPages} · {filteredUsers.length} results
-                </p>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setPage(1)}
-                    disabled={page === 1}
-                    className="px-2 py-1 rounded-lg text-xs font-black border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition"
-                  >
-                    «
-                  </button>
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="px-2 py-1 rounded-lg text-xs font-black border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition"
-                  >
-                    ‹
-                  </button>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const p = Math.min(Math.max(page - 2 + i, 1), totalPages);
-                    return (
-                      <button
-                        key={p}
-                        onClick={() => setPage(p)}
-                        className={`px-3 py-1 rounded-lg text-xs font-black border transition ${
-                          p === page
-                            ? "bg-indigo-600 text-white border-indigo-600"
-                            : "border-slate-200 hover:bg-slate-50 text-slate-600"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="px-2 py-1 rounded-lg text-xs font-black border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition"
-                  >
-                    ›
-                  </button>
-                  <button
-                    onClick={() => setPage(totalPages)}
-                    disabled={page === totalPages}
-                    className="px-2 py-1 rounded-lg text-xs font-black border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition"
-                  >
-                    »
-                  </button>
-                </div>
+              <div className="p-4 border-t border-slate-100 bg-slate-50/40 flex items-center justify-between">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 transition"
+                >
+                  Previous
+                </button>
+                <span className="text-xs font-bold text-slate-400">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 transition"
+                >
+                  Next
+                </button>
               </div>
             )}
           </div>
         </div>
       </main>
 
+      {/* Overlays & Modals */}
       <UserDrawer
         user={selectedUser}
         onClose={() => setSelectedUser(null)}
@@ -951,6 +921,7 @@ export default function AdminDashboard() {
         onDeleteUser={handleDeleteUser}
         actionLoading={actionLoading}
       />
+
       <ConfirmModal
         open={!!confirm}
         title={confirm?.title}
@@ -959,6 +930,7 @@ export default function AdminDashboard() {
         onConfirm={confirm?.onConfirm}
         onCancel={() => setConfirm(null)}
       />
+
       <Toast toasts={toasts} remove={removeToast} />
     </div>
   );

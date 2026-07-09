@@ -253,10 +253,10 @@ function Register() {
                 auto_select={false}
                 useOneTap={false}
                 text="signup_with"
-                shape="rectangular"
+                shape="circle"
                 theme="outline"
                 size="large"
-                width="320"
+                // width="320"
               />
             </div>
 

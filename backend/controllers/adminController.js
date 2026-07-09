@@ -22,7 +22,7 @@ const getAdminStats = async (req, res) => {
       totalStudents,
       totalBookings,
       totalRequests,
-    });
+    }); // Changed the ']' to '}' here
   } catch (error) {
     res.status(500).json({ message: "Error retrieving metrics", error: error.message });
   }
@@ -33,8 +33,8 @@ const getAdminStats = async (req, res) => {
 // @access   Private (Admin Only)
 const getAllUsers = async (req, res) => {
   try {
-    // Exclude password hashes for security
-    const users = await User.find({}).select("-password").sort({ createdAt: -1 });
+    // Exclude sensitive fields for security (add refresh tokens here if applicable)
+    const users = await User.find({}).select("-password -tokens").sort({ createdAt: -1 });
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: "Error fetching users list", error: error.message });
@@ -51,37 +51,67 @@ const deleteUser = async (req, res) => {
       return res.status(404).json({ message: "User target not found" });
     }
     
-    res.status(200).json({ message: `Account for ${user.fullName} successfully removed.` });
+    res.status(200).json({ message: `Account for ${user.fullName || 'User'} successfully removed.` });
   } catch (error) {
     res.status(500).json({ message: "Error deleting user", error: error.message });
+  }
+};
+
+
+// @desc     Get recent platform activity for the admin feed
+// @route    GET /api/admin/activity
+// @access   Private (Admin Only)
+const getRecentActivity = async (req, res) => {
+  try {
+    const recentUsers = await User.find({})
+      .sort({ createdAt: -1 })
+      .limit(8)
+      .select("fullName role createdAt");
+
+    const activity = recentUsers.map((u) => ({
+      icon: "👤",
+      message: `${u.fullName} joined as a ${u.role}`,
+      createdAt: u.createdAt,
+    }));
+
+    res.status(200).json(activity);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching activity", error: error.message });
   }
 };
 
 // @desc     Toggle Ban/Unban status of a user
 // @route    PUT /api/admin/users/:id/toggle-ban
 // @access   Private (Admin Only)
-  const toggleUserBan = async (req, res) => {
+const toggleUserBan = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // ADD THIS LINE RIGHT HERE
+    // Kept for debugging your middleware payload
     console.log("req.user contents:", req.user);
 
+    // 1. Find the target user first to know their current state
     const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    await User.findByIdAndUpdate(
+    // 2. Prevent admins from accidentally banning themselves if req.user contains the admin ID
+    if (req.user && req.user.id === id) {
+      return res.status(400).json({ message: "Action denied. You cannot ban your own administrator account." });
+    }
+
+    // 3. Toggle and return the fresh updated document
+    const updatedUser = await User.findByIdAndUpdate(
       id,
       { $set: { isBanned: !user.isBanned } },
-      { new: true }
+      { new: true } // Returns the newly modified object
     );
 
     res.status(200).json({ 
-      message: "User status updated successfully.", 
-      userId: user._id, 
-      isBanned: !user.isBanned 
+      message: `User status changed to ${updatedUser.isBanned ? "Banned" : "Active"}.`, 
+      userId: updatedUser._id, 
+      isBanned: updatedUser.isBanned 
     });
 
   } catch (error) {
@@ -95,4 +125,5 @@ module.exports = {
   getAdminStats,
   getAllUsers,
   deleteUser,
+ getRecentActivity,
 };
